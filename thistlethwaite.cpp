@@ -461,9 +461,9 @@ vc id(vc & state, int phase){
 	  vc id;
 
 	  // ensuring edge orientations are zero
-	/*  for( int i = 0; i < 12; i++){
-		 id.push_back(state[i]&1);
-	  } */
+	  /*  for( int i = 0; i < 12; i++){
+		  id.push_back(state[i]&1);
+		  } */
 	  // corner orientations to be zero
 	  for( int i = 12; i < 20; i++){
 		 id.push_back(state[i]&3);
@@ -480,7 +480,7 @@ vc id(vc & state, int phase){
 	  id.push_back(i);
 	  }
 	  } // we can also try & 28 for (11100) to forget least 2 significant bits
-	   */
+	  */
 
 	  // M-Slice (slice between L/R face)
 	  // push back indices of 0,2,8,10 to track 
@@ -765,8 +765,7 @@ void build_path( vi path, string & build ){
 }
 
 bool DLS( vc & startState, vc & goalID, int limit, map<vc,int> & lastMove,
-	  map<vc,vc> & predecessor, int phase, map<vc,vc> & visited){
-
+	  map<vc,vc> & predecessor, int phase){
    // get oldState, oldID
    vc oldState = startState;
    vc oldID = id(oldState, phase);
@@ -785,7 +784,6 @@ bool DLS( vc & startState, vc & goalID, int limit, map<vc,int> & lastMove,
    vi moveSet = applicableMoves[phase];
    for( int i = 0; i < moveSet.size(); i++ ){
 	  int move = moveSet[i];
-	  //move = (move*19)%moveSet.size();
 
 	  // get newState, perform DLS at next depth
 	  vc newState = applyMove(move, oldState);
@@ -793,33 +791,240 @@ bool DLS( vc & startState, vc & goalID, int limit, map<vc,int> & lastMove,
 
 	  // we recur at this ID if we have not seen it before
 	  // recur at this ID for all moves
-	  //	  if( visited[newID].size() == 0 ){
-	  //		 visited[newID].push_back(limit);
-	  if( DLS(newState, goalID, (limit-1), lastMove, predecessor, phase,
-			   visited) == true){
+	  if( DLS(newState, goalID, (limit-1), lastMove, predecessor, phase) == true){
 		 cout << move << " ";
 		 lastMove[newID] = move;
 		 predecessor[newID] = oldID;
 		 return true;
 	  }
-	  //	  }
-	  //	  else{
-	  //		 if( int((visited[newID])[0]) > limit ){
-	  //			(visited[newID])[0] = limit;
-	  //		 }
-	  //	  }
+   }
+   return false;
+}
+
+// will return true if solution found on forward search
+// false if no solution found on forward search
+bool DLSForward( vc & startState, vc & goalID, int limit, map<vc,int> & lastMove,
+	  map<vc,vc> & predecessor, map<vc,int> direction, int phase, vi & path){
+   // get oldState, oldID
+   vc oldState = startState;
+   vc oldID = id(oldState, phase);
+   int & oldDir = direction[oldID];
+
+   // if we have arrived at goalID, return true
+   if( oldID == goalID ){
+	  cout << "DLSForward found solution on forward search" << endl;
+	  return true;
    }
 
+   // if we have reached depth, we return false since no sol found
+   if( limit <= 0 ){
+	  // we will 
+	  return false;
+   }
+
+
+   // recur for all moves 
+   vi moveSet = applicableMoves[phase];
+   for( int i = 0; i < moveSet.size(); i++ ){
+	  int move = moveSet[i];
+
+	  // get newState, perform DLS at next depth
+	  vc newState = applyMove(move, oldState);
+	  vc newID = id(newState,phase);
+	  int & newDir = direction[newID];
+
+	  // if we have found a solution, rebuild and return
+	  if(DLSForward(newState, goalID, (limit-1), lastMove, predecessor, 
+			   direction, phase, path)){
+		 lastMove[newID] = move;
+		 predecessor[newID] = oldID;
+		 newDir = 1;
+		 cout << "Solution found on forward search in DLSForward" << endl;
+		 return true;
+	  }
+
+	  // if no solution found, we only add to maps if we have not seen this ID
+	  // before
+
+	  if( ! (DLSForward(newState, goalID, (limit-1), lastMove, predecessor, 
+				  direction, phase, path))){
+		 // if newID isn't initialized, we add to our maps
+		 if( newDir == 0 ){
+			newDir = 1;
+			lastMove[newID] = move;
+			predecessor[newID] = oldID;
+		 }
+
+		 // if we have seen this ID before, we skip
+		 if( newDir == 1 ){
+		 }
+
+		 // if we have found an intersection, rebuild path accordingly, and
+		 // return true
+		 if( newDir == 2 ){
+			// rebuild from newID to goalID
+			// rebuild from oldID to startID
+			path = path;
+			cout << "Solution found at intersection in DLSForward" << endl;
+			return true;
+		 }
+	  }
+   }
+   // if no solution found or no intersection found, return false
+   return false;
+}
+
+// will return true if intersection found with forward search
+// will return false if no intersection found for max_depth given with forward
+bool DLSBackward( vc & startState, vc & goalID, int limit, map<vc,int> & lastMove,
+	  map<vc,vc> & predecessor, map<vc,int> direction, int phase, vi & path){
+   // get oldState, oldID
+   vc oldState = startState;
+   vc oldID = id(oldState, phase);
+   int & oldDir = direction[oldID];
+
+   // if we have arrived at goalID, return true
+   if( oldID == goalID ){
+	  cout << "DLSBackward found solution on backward search" << endl;
+	  return true;
+   }
+
+   // if we have reached depth, we return false since no sol found
+   if( limit <= 0 ){
+	  return false;
+   }
+
+
+   // recur for all moves 
+   vi moveSet = applicableMoves[phase];
+   for( int i = 0; i < moveSet.size(); i++ ){
+	  int move = moveSet[i];
+
+	  // get newState, perform DLS at next depth
+	  vc newState = applyMove(move, oldState);
+	  vc newID = id(newState,phase);
+	  int & newDir = direction[newID];
+
+	  // if we have found a solution, rebuild and return
+	  if(DLSBackward(newState, goalID, (limit-1), lastMove, predecessor, 
+			   direction, phase, path)){
+		 lastMove[newID] = move;
+		 predecessor[newID] = oldID;
+		 newDir = 2;
+		 cout << "Solution found on backward search in DLSBackward" << endl;
+		 return true;
+	  }
+
+	  // if no solution found, we only add to maps if we have not seen this ID
+	  // before
+	  if( ! (DLSBackward(newState, goalID, (limit-1), lastMove, predecessor, 
+				  direction, phase, path))){
+		 // if newID isn't initialized, we add to our maps
+		 if( newDir == 0 ){
+			newDir = 1;
+			lastMove[newID] = move;
+			predecessor[newID] = oldID;
+		 }
+
+		 // if we have seen this ID before, we skip
+		 if( newDir == 2 ){
+			continue;
+		 }
+
+		 // if we have found an intersection, rebuild path accordingly, and
+		 // return true
+		 if( newDir == 1 ){
+			// rebuild from newID to goalID
+			// rebuild from oldID to startID
+			path = path;
+			cout << "Solution found at intersection in DLSBackward" << endl;
+			return true;
+		 }
+	  }
+   }
+   // if no solution found or no intersection found, return false
    return false;
 
 }
+
+vi BDIDDFS ( vc src, vc target, int limit, int phase ){
+   // initialize maps 
+   map<vc,int> lastMove;
+   map<vc,vc> predecessor;
+   map<vc,int> direction;
+
+   // get goalID
+   vc goalID = id(target,phase);
+   vc startID = id(src,phase);
+   vi path;
+
+   // return if we are already in phase
+   if( startID == goalID ){
+	  cout << "already in phase" << endl;
+	  vi path;
+	  return path;
+   }
+
+   // perform DLS iteratively at an increasing depth level
+   for( int i = 0; i <= limit; i++ ){
+
+	  //cout << "trying iteration at depth: " << i << endl;
+
+	  // perform forward DLS up to increasing depth. If solution found, we rebuild solution
+	  // if true, we have found a path from first forward search
+	  // otherwise, our maps will be initialized
+	  cout << "performing forward search..." << endl;
+	  if(DLSForward( src, goalID, i, lastMove, predecessor, direction,
+			   phase, path) == true){
+
+		 //cout << "sol found from forward search" << endl;
+
+		 // rebuild path
+		 /*	 while( goalID != startID ){
+			 path.insert(path.begin(), (lastMove)[goalID]);
+			 goalID = (predecessor)[goalID];
+			 } 
+			 cout << endl; */
+		 cout << "Solution found at depth: " << i << endl;
+		 return path;
+	  }
+
+	  // If no solution is found from forward, we perform backwards search up
+	  // to this depth to check for intersections between forward and backward
+	  // search
+	  // If a solution is found, we rebuild path accordingly
+	  // if true is returned, we found an intersection, and we can rebuild
+	  // path
+	  //
+	  cout << "performing backward search..." << endl;
+	  if(DLSBackward( target, startID, i, lastMove, predecessor, direction, 
+			   phase, path) == true){
+		 // rebuild path
+		 //cout << "intersection found from backward search" << endl;
+		 /*	 while( goalID != startID ){
+			 path.insert(path.begin(), (lastMove)[goalID]);
+			 goalID = (predecessor)[goalID];
+			 }  
+			 cout << endl; */
+		 cout << "Solution found at depth: " << i << endl;
+		 return path;
+	  }
+
+	  // If no solution found from forward or backward search, reset tables
+	  // and iterate through a deeper depth
+	  //lastMove.clear();
+	  //predecessor.clear();
+	  cout << "no sol reachable..." << endl;
+   }
+   return path;
+}
+
 
 vi IDDFS ( vc src, vc target, int limit, int phase ){
 
    // initialize maps 
    map<vc,int> lastMove;
    map<vc,vc> predecessor;
-   map<vc,vc> visited; // <stateID, depth discovered>
 
    // get goalID
    vc goalID = id(target,phase);
@@ -834,7 +1039,7 @@ vi IDDFS ( vc src, vc target, int limit, int phase ){
 
    // perform DLS iteratively at an increasing depth level
    for( int i = 0; i <= limit; i++ ){
-	  if(DLS( src, goalID, i, lastMove, predecessor, phase, visited) == true){
+	  if(DLS( src, goalID, i, lastMove, predecessor, phase) == true){
 
 		 // rebuild path
 		 vi path;
@@ -849,7 +1054,6 @@ vi IDDFS ( vc src, vc target, int limit, int phase ){
 	  else{
 		 // lastMove.clear();
 		 // predecessor.clear();
-		 visited.clear(); // might not be necessary
 		 cout << "no sol reachable..." << endl;
 		 cout << "trying next iteration at depth: " << i << endl;
 	  }
@@ -873,9 +1077,9 @@ int main(int argc, char** argv){
 	  else{ cout << int(cube[i])/4 << " ";}
    }cout << endl; 
 
-   
 
-   vi scramble_path = scramble(15, cube);
+
+   vi scramble_path = scramble(2, cube);
 
    int phase = 1;
    int depth = 100;
@@ -883,10 +1087,10 @@ int main(int argc, char** argv){
    string build; // complete solution string
 
    // function to convert int moves to string literals
-  // build_path(path, build);
+   // build_path(path, build);
 
    vi path;
-   path = IDDFS(cube, goalCube, depth, phase);
+   path = BDIDDFS(cube, goalCube, depth, phase);
    for( int i = 0; i < path.size(); i++){
 	  cube = applyMove(path[i], cube);
    }
@@ -905,67 +1109,67 @@ int main(int argc, char** argv){
 
    cout << build << endl;
 
-   phase = 2;
-   path = IDDFS(cube, goalCube, depth, phase);
-   for( int i = 0; i < path.size(); i++){
+/*    phase = 2;
+	  path = BDIDDFS(cube, goalCube, depth, phase);
+	  for( int i = 0; i < path.size(); i++){
 	  cube = applyMove(path[i], cube);
-   }
+	  }
 
-   for( int i = 0; i < cube.size(); i++){
+	  for( int i = 0; i < cube.size(); i++){
 	  if( i < 12 ){
-		 cout << int(cube[i]&1) << " ";
+	  cout << int(cube[i]&1) << " ";
 	  }
 	  else{ 
-		 cout << int(cube[i]&3) << " ";
+	  cout << int(cube[i]&3) << " ";
 	  }
-   }
-   cout << endl; 
+	  }
+	  cout << endl; 
 
-   build_path(path, build);
+	  build_path(path, build);
 
-   cout << build << endl; 
-/*
-   phase = 3;
-   path = IDDFS(cube, goalCube, depth, phase);
-   for( int i = 0; i < path.size(); i++){
+	  cout << build << endl; */ 
+   /*
+	  phase = 3;
+	  path = IDDFS(cube, goalCube, depth, phase);
+	  for( int i = 0; i < path.size(); i++){
 	  cube = applyMove(path[i], cube);
-   }
+	  }
 
-   for( int i = 0; i < cube.size(); i++){
+	  for( int i = 0; i < cube.size(); i++){
 	  if( i < 12 ){
-		 cout << int(cube[i]&1) << " ";
+	  cout << int(cube[i]&1) << " ";
 	  }
 	  else{ 
-		 cout << int(cube[i]&3) << " ";
+	  cout << int(cube[i]&3) << " ";
 	  }
-   }
-   cout << endl; 
+	  }
+	  cout << endl; 
 
-   phase = 4;
-   path = IDDFS(cube, goalCube, depth, phase);
-   for( int i = 0; i < path.size(); i++){
+	  phase = 4;
+	  path = IDDFS(cube, goalCube, depth, phase);
+	  for( int i = 0; i < path.size(); i++){
 	  cube = applyMove(path[i], cube);
-   }
+	  }
 
-   for( int i = 0; i < cube.size(); i++){
+	  for( int i = 0; i < cube.size(); i++){
 	  if( i < 12 ){
-		 cout << int(cube[i]&1) << " ";
+	  cout << int(cube[i]&1) << " ";
 	  }
 	  else{ 
-		 cout << int(cube[i]&3) << " ";
+	  cout << int(cube[i]&3) << " ";
 	  }
-   }
-   cout << endl; 
-*/
+	  }
+	  cout << endl; 
+	  */
 
 
-/*
+   /*
 
    // Scramble the cube
    /////////////////
-   
-	  vi scramble_path = scramble(30, cube);
-	  string sp;
+
+   vi scramble_path = scramble(30, cube);
+   string sp;
    //build_path(scramble_path, sp);
 
    // begin solving cube by iteratively going through the 4 phases
@@ -996,7 +1200,7 @@ int main(int argc, char** argv){
    }
    } cout << endl;
    /////////////
-	*/
+   */
    /*
 	  phase = 3;
 	  path = BDBFS( cube, goalCube, phase );
@@ -1009,7 +1213,7 @@ int main(int argc, char** argv){
    // Print scramble path, solution
    cout << sp << endl;
    cout << build << endl;
-	*/
+   */
    /*   int phase = 1;
 
 		vi path;
@@ -1023,7 +1227,7 @@ int main(int argc, char** argv){
 
 		path = IDDFS(cube, goalCube, 4, phase);
 		build_path(path, build);
-	*/
+		*/
    /*   phase++;
 		path = IDDFS(cube, goalCube, 50, phase);
 		build_path(path, build);
@@ -1035,7 +1239,7 @@ int main(int argc, char** argv){
 		phase++;
 		path = IDDFS(cube, goalCube, 50, phase);
 		build_path(path, build);
-	*/
+		*/
    // cout << sp << endl;
    //` cout << build << endl;
 
@@ -1064,6 +1268,6 @@ int main(int argc, char** argv){
    for( int i = 0; i < phase2.size(); i++){
    cout << int(phase2[i]) << " ";
    } cout << endl;  
-	*/
+   */
 
 }
