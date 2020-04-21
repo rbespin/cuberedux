@@ -23,7 +23,8 @@
 #include <fstream>
 #include <unordered_map>
 #include <algorithm>
-
+#include <fstream>
+#include <sstream>
 
 using namespace std;
 
@@ -63,6 +64,7 @@ char DFL = 28;
 vc initaliazedCube =
 {UF,UR,UB,UL,FR,FL,BR,BL,DF,DR,DB,DL,UFR,UBR,UBL,UFL,DFR,DBR,DBL,DFL};
 
+// 96 potential tetrad corner permutations
 vector<vc> twists = { { 0,1,2,3,4,5,6,7 }, { 0,1,2,3,6,7,4,5 }, { 0,1,5,4,3,2,6,7 },
    { 0,1,5,4,6,7,3,2 }, { 0,1,7,6,3,2,4,5 }, { 0,1,7,6,4,5,3,2 }, 
    { 0,3,2,1,4,7,6,5 }, { 0,3,2,1,6,5,4,7 }, { 0,3,5,6,1,2,4,7 }, 
@@ -466,7 +468,8 @@ int inverse(int move){
 // Apply random moves 0-17 to a state and return the path
 vi scramble(int number_of_moves, vc & state){
    int random;
-   srand(time(NULL));
+   //srand(time(NULL));
+   srand(time(0));
    vi path;
 
    for( int i = 0; i < number_of_moves; i++){
@@ -563,13 +566,17 @@ vc id(vc & state, int phase){
 			// parity for corner tetrad pair swaps.
 			if( (state[i]&30) > (state[j]&30)){
 			   tetrad_edge++;
+			   // id.push_back(i);
 			}
 		 }
 	  }
 	  if( (tetrad_edge%2) == 0 ){
-		 id.push_back(tetrad_edge);
+		 //id.push_back(tetrad_edge);
+		 id.push_back(1);
 	  } 
-
+	  else{
+		 id.push_back(0);
+	  }
 
 	  //-----------------------------------------------------------
 
@@ -588,22 +595,36 @@ vc id(vc & state, int phase){
 			   (state[i]&28) == DFL ){
 			id.push_back(i);
 		 }
-	  }
+	  } 
 
-	  // Ensuring that UFR and UBL, DBR and DFL are paired
-	  // Track the pairs 0,2; 5,7
-	  /*	  for( int i = 12; i < 20; i++ ){
-			  if( (state[i]&28) == UFR ||
-			  (state[i]&28) == UBL ){
-			  id.push_back(i);
-			  }
-			  }
+	  // pairing 0,2 
+	  for( int i = 12; i < 20; i++ ){
+		 if( (state[i]&28) == UFR ||
+			   (state[i]&28) == UBL ){
+			id.push_back(i);
+		 }
+	  }
+	  // pairing 5,7 
+	  for( int i = 12; i < 20; i++ ){
+		 if( (state[i]&28) == DBR ||
+			   (state[i]&28) == DFL ){
+			id.push_back(i);
+		 }
+	  }    
+	  /*	  // pairing 0,7
 			  for( int i = 12; i < 20; i++ ){
-			  if( (state[i]&28) == DBR ||
+			  if( (state[i]&28) == UFR ||
 			  (state[i]&28) == DFL ){
 			  id.push_back(i);
 			  }
-			  } */
+			  }
+	  // pairing 2,5 
+	  for( int i = 12; i < 20; i++ ){
+	  if( (state[i]&28) == UBL ||
+	  (state[i]&28) == DBR ){
+	  id.push_back(i);
+	  }
+	  }    */
 
 	  for( int i = 12; i < 20; i++ ){
 		 // Making sure 1,3,4,6 are in 1,3,4,6
@@ -613,21 +634,38 @@ vc id(vc & state, int phase){
 			   (state[i]&28) == DBL ){
 			id.push_back(i);
 		 }
+	  }   
+	  // Track the pairs 1,3; 4,6 and make sure they're paired
+	  // 1,3
+	  for( int i = 12; i < 20; i++ ){
+		 if( (state[i]&28) == UBR ||
+			   (state[i]&28) == UFL ){
+			id.push_back(i);
+		 }
 	  } 
-	  /*	  // Track the pairs 1,3; 4,6 and make sure they're paired
+	  // 4,6
+	  for( int i = 12; i < 20; i++ ){
+		 if( (state[i]&28) == DFR ||
+			   (state[i]&28) == DBL ){
+			id.push_back(i);
+		 }
+	  } 
+	  /*	  // pairing 1,6
 			  for( int i = 12; i < 20; i++ ){
 			  if( (state[i]&28) == UBR ||
-			  (state[i]&28) == UFL ){
-			  id.push_back(i);
-			  }
-			  }
-			  for( int i = 12; i < 20; i++ ){
-			  if( (state[i]&28) == DFR ||
 			  (state[i]&28) == DBL ){
 			  id.push_back(i);
 			  }
-			  }  
-			  */
+			  }
+
+	  // pairing 3,4
+	  for( int i = 12; i < 20; i++ ){
+	  if( (state[i]&28) == UFL ||
+	  (state[i]&28) == DFR ){
+	  id.push_back(i);
+	  }
+	  }  */
+
 	  //--- Ensuring even parity with tetrad pairs. 
 	  int tetrad = 0;
 	  for( int i=12; i<20; i++ ){
@@ -638,12 +676,71 @@ vc id(vc & state, int phase){
 			// parity for corner tetrad pair swaps.
 			if( (state[i]&28) > (state[j]&28)){
 			   tetrad++;
+			   //id.push_back(i);
 			}
 		 }
 	  }
 	  if( (tetrad%2) == 0 ){
-		 id.push_back(tetrad);
+		 // id.push_back(tetrad);
+		 id.push_back(1);
+	  } 
+	  else{
+		 id.push_back(0);
 	  }
+	  /*	  vc check;
+	  // gathering potential corner locations
+	  for( int i = 12; i < 20; i++ ){
+	  if( (state[i]&28) == UFR ) {
+	  check.push_back(i-12);
+	  }
+	  }
+	  for( int i = 12; i < 20; i++ ){
+	  if( (state[i]&28) == UBR ) {
+	  check.push_back(i-12);
+	  }
+	  }
+	  for( int i = 12; i < 20; i++ ){
+	  if( (state[i]&28) == UBL ) {
+	  check.push_back(i-12);
+	  }
+	  }
+	  for( int i = 12; i < 20; i++ ){
+	  if( (state[i]&28) == UFL ) {
+	  check.push_back(i-12);
+	  }
+	  }
+	  for( int i = 12; i < 20; i++ ){
+	  if( (state[i]&28) == DFR ) {
+	  check.push_back(i-12);
+	  }
+	  }
+	  for( int i = 12; i < 20; i++ ){
+	  if( (state[i]&28) == DBR ) {
+	  check.push_back(i-12);
+	  }
+	  }
+	  for( int i = 12; i < 20; i++ ){
+	  if( (state[i]&28) == DBL ) {
+	  check.push_back(i-12);
+	  }
+	  }
+	  for( int i = 12; i < 20; i++ ){
+	  if( (state[i]&28) == DFL ) {
+	  check.push_back(i-12);
+	  }
+	  }
+
+	  // check if one of 96 permutations
+	  if( find( twists.begin(), twists.end(), check ) != twists.end() ){
+	  id.insert(id.end(),check.begin(), check.end());
+	  //id.push_back(1);
+	  // for( int i = 0; i < check.size(); i++){
+	  //	id.push_back(check[i]);
+	  //}
+	  }
+	  else{
+	  id.push_back(0);
+	  } */
 
 	  //-----------------------------------------------------------
 	  return id;
@@ -655,85 +752,6 @@ vc id(vc & state, int phase){
 
 	  return state;
    }
-
-   if( phase == 5 ){
-	  vc check;
-	  /*	  for( int i = 12; i < 20; i++ ){
-			  check.push_back(state[i]&28);
-			  } */
-	  // gathering potential corner locations
-	  for( int i = 12; i < 20; i++ ){
-		 if( (state[i]&28) == UFR ) {
-			check.push_back(i-12);
-		 }
-	  }
-	  for( int i = 12; i < 20; i++ ){
-		 if( (state[i]&28) == UBR ) {
-			check.push_back(i-12);
-		 }
-	  }
-	  for( int i = 12; i < 20; i++ ){
-		 if( (state[i]&28) == UBL ) {
-			check.push_back(i-12);
-		 }
-	  }
-	  for( int i = 12; i < 20; i++ ){
-		 if( (state[i]&28) == UFL ) {
-			check.push_back(i-12);
-		 }
-	  }
-	  for( int i = 12; i < 20; i++ ){
-		 if( (state[i]&28) == DFR ) {
-			check.push_back(i-12);
-		 }
-	  }
-	  for( int i = 12; i < 20; i++ ){
-		 if( (state[i]&28) == DBR ) {
-			check.push_back(i-12);
-		 }
-	  }
-	  for( int i = 12; i < 20; i++ ){
-		 if( (state[i]&28) == DBL ) {
-			check.push_back(i-12);
-		 }
-	  }
-	  for( int i = 12; i < 20; i++ ){
-		 if( (state[i]&28) == DFL ) {
-			check.push_back(i-12);
-		 }
-	  }
-
-/*	  for( int i = 0; i < check.size(); i++ ){
-		 cout << check[i] << " ";
-	  }cout << endl; */
-
-	  vc id;
-	  //return check;
-	  
-	  // check if one of 96 permutations
- 	  if( find( twists.begin(), twists.end(), check ) != twists.end() ){
-		 id.push_back(1);
-	  }
-	  else{
-		 id.push_back(0);
-	  } 
-/*	  bool setcheck = false;
-	  for( int i = 0; i < twists.size(); i++ ){
-		 if( check == twists[i] ){
-			cout << "reached" << endl;
-			setcheck = true;
-		 }
-	  }
-	  if( setcheck == true ){
-		 id.push_back(1);
-	  }
-	  else{
-		 id.push_back(0);
-	  }
- */
-	  return id; 
-   }
-
 
    return state;
 }
@@ -1109,295 +1127,666 @@ int main(int argc, char** argv){
 
    vc goalCube = 
    {UF,UR,UB,UL,FR,FL,BR,BL,DF,DR,DB,DL,UFR,UBR,UBL,UFL,DFR,DBR,DBL,DFL};
+   ifstream inFile;
 
-   // map<vc,vi> phase_1_database = generate_database(1);
-
-   //cout << phase_1_database.size() << endl;
-
-   //map<vc,vi> phase_2_database = generate_database(2);
-
-   //cout << phase_2_database.size() << endl;
-
-   // map<vc,vi> phase_3_database = generate_database(3);
-
-   //cout << phase_3_database.size() << endl;
-
-   //   map<vc,vi> phase_4_database = generate_database(4);
-
-   // cout << phase_4_database.size() << endl;
-   /*   map<vc,vi> phase_5_database = generate_database(5);
-
-		cout << phase_5_database.size() << endl;
-
-		map<vc, vi>::iterator it;
-		cout << "vc twists = { ";
-
-		for ( it = phase_5_database.begin(); it != phase_5_database.end(); it++ )
-		{
-		vc first = it->first;
-		vi second = it->second;
-		cout << "{ ";
-		for( int i = 0; i < first.size(); i++){
-		if( i != first.size()-1 ){
-		cout << int(first[i])-12 << ",";
-		}
-		else{
-		cout << int(first[i])-12;
-		}
-		}
-
-		cout << " }, ";
-		}
-		cout << " };" << endl;
-
-		cout << endl;
-		vc cornerSet = {UFR,UBR,UBL,UFL,DFR,DBR,DBL,DFL};
-
-		cout << int(cornerSet[1]) << endl; */
-   //vi scramble_path = scramble(25,cube);
-   cube = applyMove(8,cube);
-   cube = applyMove(1, cube);
-   cube = applyMove(13, cube);
-   cube = applyMove(7,cube);
-   vc phase5 = id(cube, 5);
-
-   for( int i = 0; i < phase5.size(); i++ ){
-	  cout << int(phase5[i]) << " ";
+   inFile.open("database_1.txt");
+   if( !inFile ){
+	  cout << "Unable to open file" << endl;
+	  exit(1);
    }
+
+   map<vc,vi> phase1map;
+ //  map< string, string > p1m;
+   if( inFile.is_open()){
+	  string line;
+	  int check = 0;
+	  vc id;
+	  vi sol;
+//	  string hold = "";
+	  while( getline(inFile,line) ){
+		 for( int i = 0; i < line.size(); i+= 2 ){
+			id.push_back((line[i]));
+		 }
+		 getline(inFile,line); 
+		 stringstream ss;
+		 ss << line;
+		 string temp;
+		 int found;
+		 while( !ss.eof() ){
+			ss >> temp;
+			if( stringstream(temp) >> found ){
+			   sol.push_back(stoi(temp));
+			}
+			temp = "";
+		 }
+		 phase1map[id] = sol;
+		 id.clear();
+		 sol.clear(); 
+	  }
+   }
+
+/*   map<vc, vi>::iterator it;
+   for( it = phase1map.begin(); it != phase1map.end(); it++ ){
+	  for( int i = 0; i < it->first.size(); i++ ){
+		 cout << (it->first[i]) << " ";
+	  }cout << endl;
+	  for( int i = 0; i < it->second.size(); i++ ){
+		 cout << int( it->second[i] ) << " ";
+	  }cout << endl;
+   } */
+   cout << phase1map.size() << endl;
+
+   inFile.close();
+
+   inFile.open("database_2.txt");
+   if( !inFile ){
+	  cout << "Unable to open file" << endl;
+	  exit(1);
+   }
+   map<vc,vi> phase2map;
+   if( inFile.is_open()){
+	  string line;
+	  int check = 0;
+	  vc id;
+	  vi sol;
+	  while( getline(inFile,line) ){
+		 for( int i = 0; i < line.size(); i+= 2 ){
+			id.push_back((line[i]));
+		 }
+		 getline(inFile,line); 
+		 stringstream ss;
+		 ss << line;
+		 string temp;
+		 int found;
+		 while( !ss.eof() ){
+			ss >> temp;
+			if( stringstream(temp) >> found ){
+			   sol.push_back(stoi(temp));
+			}
+			temp = "";
+		 }
+		 phase2map[id] = sol;
+		 id.clear();
+		 sol.clear(); 
+	  }
+   }
+   cout << phase2map.size() << endl;
+
+   inFile.close();
+   inFile.open("database_3.txt");
+   if( !inFile ){
+	  cout << "Unable to open file" << endl;
+	  exit(1);
+   }
+   map<vc,vi> phase3map;
+   if( inFile.is_open()){
+	  string line;
+	  int check = 0;
+	  vc id;
+	  vi sol;
+	  while( getline(inFile,line) ){
+		 for( int i = 0; i < line.size(); i+= 2 ){
+			id.push_back((line[i]));
+		 }
+		 getline(inFile,line); 
+		 stringstream ss;
+		 ss << line;
+		 string temp;
+		 int found;
+		 while( !ss.eof() ){
+			ss >> temp;
+			if( stringstream(temp) >> found ){
+			   sol.push_back(stoi(temp));
+			}
+			temp = "";
+		 }
+		 phase3map[id] = sol;
+		 id.clear();
+		 sol.clear(); 
+	  }
+   }
+   cout << phase3map.size() << endl;
+
+   inFile.close();
+   inFile.open("database_4.txt");
+   if( !inFile ){
+	  cout << "Unable to open file" << endl;
+	  exit(1);
+   }
+   map<vc,vi> phase4map;
+   if( inFile.is_open()){
+	  string line;
+	  int check = 0;
+	  vc id;
+	  vi sol;
+	  while( getline(inFile,line) ){
+		 for( int i = 0; i < line.size(); i+= 2 ){
+			id.push_back((line[i]));
+		 }
+		 getline(inFile,line); 
+		 stringstream ss;
+		 ss << line;
+		 string temp;
+		 int found;
+		 while( !ss.eof() ){
+			ss >> temp;
+			if( stringstream(temp) >> found ){
+			   sol.push_back(stoi(temp));
+			}
+			temp = "";
+		 }
+		 phase4map[id] = sol;
+		 id.clear();
+		 sol.clear(); 
+	  }
+   }
+   cout << phase4map.size() << endl;
+   inFile.close();
+
+
+
+   /*  for( int i = 0; i < phase1map[cube].size(); i++ ){
+	   cout << int(phase1map[cube][i]) << " ";
+	   }
+	   cout << endl;*/
+   /*   FILE* fp = fopen("database_1.txt", "r");
+		if (fp == NULL){
+		exit(EXIT_FAILURE);
+		}
+
+		char* line = NULL;
+		size_t len = 0;
+		int check = 0;
+		vc id;
+		vi sol;
+		while ((getline(&line, &len, fp)) != -1) {
+   // using printf() in all tests for consistency
+   //printf("%s", line);;
+   if( check == 0 ){
+   for( size_t i = 0; i < len; i+=2 ){
+   id.push_back(char(line[i]));
+   }
+   check = 1;
+   }
+   if( check == 1 ){
+   for( size_t i = 0; i < len; i+= 2){
+   sol.push_back(int(line[i]));
+   }
+   check = 0;
+   phase1map[id] = sol;
+   id.clear();
+   sol.clear();
+   }
+
+   }
+   fclose(fp);
+   if (line){
+   free(line);
+   }
+   */
+
+   //cout << phase1map[cube] << endl;
+
+
+   /*   map<vc,vi> test;
+
+		vi testvi = {1,2,4,6,7};
+		vi testvi2 = {2,3,24,1,54};
+
+		test[cube] = testvi;
+   // test[goalCube] = testvi2;
+
+   ofstream myfile;
+   myfile.open("example.txt");
+   map<vc,vi>::iterator it;
+   for( it = test.begin(); it != test.end(); it++ ){
+   vc key = it->first;
+   vi value = it->second;
+
+   for( int i = 0; i < key.size(); i++ ){
+   myfile << int(key[i]) << " ";
+   }
+   myfile << "\n";
+
+   for( int i = 0; i < value.size(); i++ ){
+   myfile << int(value[i]) << " ";
+   } 
+   myfile << "\n";
+   }
+   myfile.close();*/
+
+   /*
+	  cout << "Generating phase 1 database..." << endl;
+	  map<vc,vi> phase_1_database = generate_database(1);
+	  cout << "Generated database of phase 1, size: " << phase_1_database.size() << endl;
+	  ofstream myfile;
+	  myfile.open("database_1.txt");
+	  map<vc,vi>::iterator it;
+	  for( it = phase_1_database.begin(); it != phase_1_database.end(); it++ ){
+	  for( int i = 0; i < (it->first).size(); i++ ){
+	  myfile << int((it->first)[i]) << " ";
+	  }
+	  myfile << "\n";
+	  for( int i = 0; i < (it->second).size(); i++ ){
+	  myfile << int((it->second)[i]) << " ";
+	  }
+	  myfile << "\n";
+	  }
+	  myfile.close();
+
+
+	  cout << "Generating phase 2 database..." << endl;
+	  map<vc,vi> phase_2_database = generate_database(2);
+	  cout << "Generated database of phase 2, size: " << phase_2_database.size() << endl;
+   //ofstream myfile;
+   myfile.open("database_2.txt");
+   //map<vc,vi>::iterator it;
+   for( it = phase_2_database.begin(); it != phase_2_database.end(); it++ ){
+   for( int i = 0; i < (it->first).size(); i++ ){
+   myfile << int((it->first)[i]) << " ";
+   }
+   myfile << "\n";
+   for( int i = 0; i < (it->second).size(); i++ ){
+   myfile << int((it->second)[i]) << " ";
+   }
+   myfile << "\n";
+   }
+   myfile.close();
+
+
+   cout << "Generating phase 3 database..." << endl;
+   map<vc,vi> phase_3_database = generate_database(3);
+   cout << "Generated database of phase 3, size: " << phase_3_database.size() << endl;
+
+   //ofstream myfile;
+   myfile.open("database_3.txt");
+   //map<vc,vi>::iterator it;
+   for( it = phase_3_database.begin(); it != phase_3_database.end(); it++ ){
+   for( int i = 0; i < (it->first).size(); i++ ){
+   myfile << int((it->first)[i]) << " ";
+   }
+   myfile << "\n";
+   for( int i = 0; i < (it->second).size(); i++ ){
+   myfile << int((it->second)[i]) << " ";
+   }
+   myfile << "\n";
+   }
+   myfile.close();
+
+   cout << "Generating phase 4 database..." << endl;
+   map<vc,vi> phase_4_database = generate_database(4);
+   cout << "Generated database of phase 4, size: " << phase_4_database.size() << endl; 
+
+   // ofstream myfile;
+   myfile.open("database_4.txt");
+   //map<vc,vi>::iterator it;
+   for( it = phase_4_database.begin(); it != phase_4_database.end(); it++ ){
+   for( int i = 0; i < (it->first).size(); i++ ){
+   myfile << int((it->first)[i]) << " ";
+   }
+   myfile << "\n";
+   for( int i = 0; i < (it->second).size(); i++ ){
+   myfile << int((it->second)[i]) << " ";
+   }
+myfile << "\n";
+}
+myfile.close();
+*/
+/* string sp;
+   vi scramblepath = scramble(25, cube);
+   build_path(scramblepath, sp);
+
+   string build; // complete solution string */
+
+/*
+// cout << "phase 1 solution: " << endl;
+vc cubeID1 = id(cube,1);
+vi path1 = phase_1_database[cubeID1];
+for( int i = 0; i < path1.size(); i++ ){
+// cout << path1[i] << " ";
+cube = applyMove(path1[i],cube);
+} //cout << endl;
+
+build_path(path1, build);
+
+//cout << "phase 2 solution: " << endl;
+vc cubeID2 = id(cube,2);
+vi path2 = phase_2_database[cubeID2];
+for( int i = 0; i < path2.size(); i++ ){
+// cout << path2[i] << " ";
+cube = applyMove(path2[i],cube);
+} //cout << endl;
+
+build_path(path2, build);
+
+// cout << "phase 3 solution: " << endl;
+vc cubeID3 = id(cube,3);
+vi path3 = phase_3_database[cubeID3];
+for( int i = 0; i < path3.size(); i++ ){
+//cout << path3[i] << " ";
+cube = applyMove(path3[i],cube);
+} //cout << endl;
+
+build_path(path3, build);
+
+//cout << "phase 4 solution: " << endl;
+vc cubeID4 = id(cube,4);
+vi path4 = phase_4_database[cubeID4];
+for( int i = 0; i < path4.size(); i++ ){
+//cout << path4[i] << " ";
+cube = applyMove(path4[i],cube);
+} //cout << endl;
+
+
+build_path(path4, build);
+
+cout << "Scramble Path: " << sp << endl;
+cout << "Solution Path: " << build << endl;
+cout << endl; */
+/*
+   for( int j = 0; j < 25; j++ ){
+
+   sp = "";
+   cube = {UF,UR,UB,UL,FR,FL,BR,BL,DF,DR,DB,DL,UFR,UBR,UBL,UFL,DFR,DBR,DBL,DFL};
+   scramblepath = scramble(20, cube);
+   build_path(scramblepath, sp);
+   build = ""; // complete solution string
+   cubeID1 = id(cube,1);
+   path1 = phase_1_database[cubeID1];
+   for( int i = 0; i < path1.size(); i++ ){
+   cube = applyMove(path1[i],cube);
+   }
+   build_path(path1, build);
+   cubeID2 = id(cube,2);
+   path2 = phase_2_database[cubeID2];
+   for( int i = 0; i < path2.size(); i++ ){
+   cube = applyMove(path2[i],cube);
+   } 
+   build_path(path2, build);
+   cubeID3 = id(cube,3);
+   path3 = phase_3_database[cubeID3];
+   for( int i = 0; i < path3.size(); i++ ){
+   cube = applyMove(path3[i],cube);
+   } 
+   build_path(path3, build);
+   cubeID4 = id(cube,4);
+   path4 = phase_4_database[cubeID4];
+   for( int i = 0; i < path4.size(); i++ ){
+   cube = applyMove(path4[i],cube);
+   } 
+   build_path(path4, build);
+   cout << "Scramble Path: " << sp << endl;
+   cout << "Solution Path: " << build << endl;
    cout << endl;
-
-
-   /*   for( int i = 0; i < cube.size(); i++){
-		if( i < 12 ){ cout << int(cube[i])/2 << " ";}
-		else{ cout << int(cube[i])/4 << " ";}
-		}cout << endl; 
-
-
-
-		vi scramble_path = scramble(25, cube);
-		string sp;
-		build_path(scramble_path, sp);
-
-		int phase = 1;
-		int depth = 10;
-
-		vi totPath;
-
-		string build; // complete solution string
-
-   // function to convert int moves to string literals
-   // build_path(path, build);
-
-   vi path;
-   path = IDDFS(cube, goalCube, depth, phase);
-   for( int i = 0; i < path.size(); i++){
-   cube = applyMove(path[i], cube);
    }
+   */
+//   map<vc,vi> phase_4_database = generate_database(4);
+
+// cout << phase_4_database.size() << endl;*/
+/*   map<vc,vi> phase_5_database = generate_database(5);
+
+	 cout << phase_5_database.size() << endl;
+
+	 map<vc, vi>::iterator it;
+	 cout << "vc twists = { ";
+
+	 for ( it = phase_5_database.begin(); it != phase_5_database.end(); it++ )
+	 {
+	 vc first = it->first;
+	 vi second = it->second;
+	 cout << "{ ";
+	 for( int i = 0; i < first.size(); i++){
+	 if( i != first.size()-1 ){
+	 cout << int(first[i])-12 << ",";
+	 }
+	 else{
+	 cout << int(first[i])-12;
+	 }
+	 }
+
+	 cout << " }, ";
+	 }
+	 cout << " };" << endl;
+
+	 cout << endl;
+	 vc cornerSet = {UFR,UBR,UBL,UFL,DFR,DBR,DBL,DFL};
+
+	 cout << int(cornerSet[1]) << endl; */
+//   vi scramble_path = scramble(25,cube);
+
+/*
 
    for( int i = 0; i < cube.size(); i++){
+   if( i < 12 ){ cout << int(cube[i])/2 << " ";}
+   else{ cout << int(cube[i])/4 << " ";}
+   }cout << endl; 
+
+
+
+   vi scramble_path = scramble(25, cube);
+   string sp;
+   build_path(scramble_path, sp);
+
+   int phase = 1;
+   int depth = 10;
+
+   vi totPath;
+
+   string build; // complete solution string
+
+// function to convert int moves to string literals
+// build_path(path, build);
+
+vi path;
+path = IDDFS(cube, goalCube, depth, phase);
+for( int i = 0; i < path.size(); i++){
+cube = applyMove(path[i], cube);
+}
+
+for( int i = 0; i < cube.size(); i++){
+if( i < 12 ){
+cout << int(cube[i]&1) << " ";
+}
+else{ 
+cout << int(cube[i])/4 << " ";
+}
+}
+cout << endl;
+
+build_path(path, build);
+
+totPath.insert(totPath.end(),path.begin(), path.end());
+
+cout << build << endl; 
+
+
+phase = 2;
+path = IDDFS(cube, goalCube, depth, phase);
+for( int i = 0; i < path.size(); i++){
+cube = applyMove(path[i], cube);
+}
+
+for( int i = 0; i < cube.size(); i++){
+if( i < 12 ){
+cout << int(cube[i]&1) << " ";
+}
+else{ 
+cout << int(cube[i]&3) << " ";
+}
+}
+cout << endl; 
+
+build_path(path, build);
+
+cout << build << endl;  
+
+totPath.insert(totPath.end(),path.begin(), path.end());
+
+phase = 3;
+path = IDDFS(cube, goalCube, depth, phase);
+for( int i = 0; i < path.size(); i++){
+cube = applyMove(path[i], cube);
+}
+
+for( int i = 0; i < cube.size(); i++){
    if( i < 12 ){
-   cout << int(cube[i]&1) << " ";
+	  cout << int(cube[i]&1) << " ";
    }
    else{ 
-   cout << int(cube[i])/4 << " ";
+	  cout << int(cube[i]&3) << " ";
    }
-   }
-   cout << endl;
+}
+cout << endl;
 
-   build_path(path, build);
+build_path(path, build);
 
-   totPath.insert(totPath.end(),path.begin(), path.end());
+cout << build << endl;  
 
-   cout << build << endl; 
+totPath.insert(totPath.end(),path.begin(), path.end());
 
-
-   phase = 2;
-   path = IDDFS(cube, goalCube, depth, phase);
-   for( int i = 0; i < path.size(); i++){
+phase = 4;
+path = IDDFS(cube, goalCube, depth, phase);
+for( int i = 0; i < path.size(); i++){
    cube = applyMove(path[i], cube);
-   }
+}
 
-   for( int i = 0; i < cube.size(); i++){
+for( int i = 0; i < cube.size(); i++){
    if( i < 12 ){
-   cout << int(cube[i]&1) << " ";
+	  cout << int(cube[i]&1) << " ";
    }
    else{ 
-   cout << int(cube[i]&3) << " ";
+	  cout << int(cube[i]&3) << " ";
    }
+}
+cout << endl; 
+build_path(path, build);
+
+totPath.insert(totPath.end(),path.begin(), path.end());
+
+cout << build << endl;  
+cout << endl;
+cout << endl;
+
+for( int i = 0; i < cube.size(); i++){
+   if( i < 12 ){
+	  cout << int(cube[i]) << " ";
    }
-   cout << endl; 
+   else{ 
+	  cout << int(cube[i]) << " ";
+   }
+} cout << endl;
 
-   build_path(path, build);
+cout << "Scramble path: " << endl;
+cout << sp << endl;
+cout << endl;
+cout << "Solution path: "<< endl;
+cout << build << endl;
+cout << "Solution path length: " << totPath.size() << endl;
 
-   cout << build << endl;  
+*/
+// Scramble the cube
+/////////////////
 
-   totPath.insert(totPath.end(),path.begin(), path.end());
+/*   vi scramble_path = scramble(30, cube);
+	 string sp;
+//build_path(scramble_path, sp);
 
+// begin solving cube by iteratively going through the 4 phases
+vi path; // intermediate phase solution
+string build; // complete solution string
+
+int phase = 1;
+path = BDBFS( cube, goalCube, phase );
+build_path(path, build);
+for( int i = 0; i < cube.size(); i++){
+if( i < 12 ){
+cout << int(cube[i]&1) << " ";
+}
+else{ 
+cout << int(cube[i]&3) << " ";
+}
+} cout << endl;
+
+phase = 2;
+path = BDBFS( cube, goalCube, phase );
+build_path(path, build);
+for( int i = 0; i < cube.size(); i++){
+if( i < 12 ){
+cout << int(cube[i]&1) << " ";
+}
+else{ 
+cout << int(cube[i]&3) << " ";
+}
+} cout << endl;
+/////////////
+*/
+/*
    phase = 3;
-   path = IDDFS(cube, goalCube, depth, phase);
-   for( int i = 0; i < path.size(); i++){
-   cube = applyMove(path[i], cube);
-   }
-
-   for( int i = 0; i < cube.size(); i++){
-	  if( i < 12 ){
-		 cout << int(cube[i]&1) << " ";
-	  }
-	  else{ 
-		 cout << int(cube[i]&3) << " ";
-	  }
-   }
-   cout << endl;
-
+   path = BDBFS( cube, goalCube, phase );
    build_path(path, build);
-
-   cout << build << endl;  
-
-   totPath.insert(totPath.end(),path.begin(), path.end());
 
    phase = 4;
-   path = IDDFS(cube, goalCube, depth, phase);
-   for( int i = 0; i < path.size(); i++){
-	  cube = applyMove(path[i], cube);
-   }
-
-   for( int i = 0; i < cube.size(); i++){
-	  if( i < 12 ){
-		 cout << int(cube[i]&1) << " ";
-	  }
-	  else{ 
-		 cout << int(cube[i]&3) << " ";
-	  }
-   }
-   cout << endl; 
+   path = BDBFS( cube, goalCube, phase );
    build_path(path, build);
 
-   totPath.insert(totPath.end(),path.begin(), path.end());
+// Print scramble path, solution
+cout << sp << endl;
+cout << build << endl;
+*/
+/*   int phase = 1;
 
-   cout << build << endl;  
-   cout << endl;
-   cout << endl;
+	 vi path;
+	 string build;
 
-   for( int i = 0; i < cube.size(); i++){
-	  if( i < 12 ){
-		 cout << int(cube[i]) << " ";
-	  }
-	  else{ 
-		 cout << int(cube[i]) << " ";
-	  }
-   } cout << endl;
+	 cube = applyMove(5, cube);
+	 cube = applyMove(4, cube);
 
-   cout << "Scramble path: " << endl;
-   cout << sp << endl;
-   cout << endl;
-   cout << "Solution path: "<< endl;
-   cout << build << endl;
-   cout << "Solution path length: " << totPath.size() << endl;
+	 cube = applyMove(3, cube);
+	 cube = applyMove(1, cube);
 
-   */
-	  // Scramble the cube
-	  /////////////////
+	 path = IDDFS(cube, goalCube, 4, phase);
+	 build_path(path, build);
+	 */
+/*   phase++;
+	 path = IDDFS(cube, goalCube, 50, phase);
+	 build_path(path, build);
 
-	  /*   vi scramble_path = scramble(30, cube);
-		   string sp;
-	  //build_path(scramble_path, sp);
+	 phase++;
+	 path = IDDFS(cube, goalCube, 50, phase);
+	 build_path(path, build);
 
-	  // begin solving cube by iteratively going through the 4 phases
-	  vi path; // intermediate phase solution
-	  string build; // complete solution string
-
-	  int phase = 1;
-	  path = BDBFS( cube, goalCube, phase );
-	  build_path(path, build);
-	  for( int i = 0; i < cube.size(); i++){
-	  if( i < 12 ){
-	  cout << int(cube[i]&1) << " ";
-	  }
-	  else{ 
-	  cout << int(cube[i]&3) << " ";
-	  }
-	  } cout << endl;
-
-	  phase = 2;
-	  path = BDBFS( cube, goalCube, phase );
-	  build_path(path, build);
-	  for( int i = 0; i < cube.size(); i++){
-	  if( i < 12 ){
-	  cout << int(cube[i]&1) << " ";
-	  }
-	  else{ 
-	  cout << int(cube[i]&3) << " ";
-	  }
-	  } cout << endl;
-	  /////////////
-	  */
-	  /*
-		 phase = 3;
-		 path = BDBFS( cube, goalCube, phase );
-		 build_path(path, build);
-
-		 phase = 4;
-		 path = BDBFS( cube, goalCube, phase );
-		 build_path(path, build);
-
-	  // Print scramble path, solution
-	  cout << sp << endl;
-	  cout << build << endl;
-	  */
-	  /*   int phase = 1;
-
-		   vi path;
-		   string build;
-
-		   cube = applyMove(5, cube);
-		   cube = applyMove(4, cube);
-
-		   cube = applyMove(3, cube);
-		   cube = applyMove(1, cube);
-
-		   path = IDDFS(cube, goalCube, 4, phase);
-		   build_path(path, build);
-		   */
-	  /*   phase++;
-		   path = IDDFS(cube, goalCube, 50, phase);
-		   build_path(path, build);
-
-		   phase++;
-		   path = IDDFS(cube, goalCube, 50, phase);
-		   build_path(path, build);
-
-		   phase++;
-		   path = IDDFS(cube, goalCube, 50, phase);
-		   build_path(path, build);
-		   */
-	  // cout << sp << endl;
-	  //` cout << build << endl;
+	 phase++;
+	 path = IDDFS(cube, goalCube, 50, phase);
+	 build_path(path, build);
+	 */
+// cout << sp << endl;
+//` cout << build << endl;
 
 
 
 
 
-	  /*   int phase = 3;
+/*   int phase = 3;
 
-	  //  initializeCube = applyMove(2, initializeCube);
-	  //  initializeCube = applyMove(inverse(2), initializeCube);
+//  initializeCube = applyMove(2, initializeCube);
+//  initializeCube = applyMove(inverse(2), initializeCube);
 
-	  vi scramble_one = scramble(1000, initializeCube);
+vi scramble_one = scramble(1000, initializeCube);
 
-	  reverse(scramble_one.begin(), scramble_one.end());
-	  for( int i = 0; i < scramble_one.size(); i++){
-	  initializeCube = applyMove(inverse(scramble_one[i]), initializeCube);
-	  }
+reverse(scramble_one.begin(), scramble_one.end());
+for( int i = 0; i < scramble_one.size(); i++){
+initializeCube = applyMove(inverse(scramble_one[i]), initializeCube);
+}
 
-	  for( int i = 0; i < initializeCube.size(); i++){
-	  cout << int(initializeCube[i]) << " ";
-	  }cout << endl;
+for( int i = 0; i < initializeCube.size(); i++){
+cout << int(initializeCube[i]) << " ";
+}cout << endl;
 
-	  vc phase2 = id(initializeCube, phase);
+vc phase2 = id(initializeCube, phase);
 
-	  for( int i = 0; i < phase2.size(); i++){
-	  cout << int(phase2[i]) << " ";
-	  } cout << endl;  
-	  */
+for( int i = 0; i < phase2.size(); i++){
+cout << int(phase2[i]) << " ";
+} cout << endl;  
+*/
 
 }
